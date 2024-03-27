@@ -55,8 +55,18 @@ abstract contract FlywheelDynamicRewards is BaseFlywheelRewards {
         }
         // if cycle has ended, reset cycle and transfer all available
         if (timestamp >= cycle.end) {
-            uint32 end = ((timestamp + rewardsCycleLength) / rewardsCycleLength) * rewardsCycleLength;
             uint192 rewards = getNextCycleRewards(strategy);
+
+            // if there are no rewards for next cycle, don't start a new one
+            if (rewards == 0) {
+                // if a previous cycle exists, set everything to zero
+                if (cycle.end != 0) delete rewardsCycle[strategy];
+
+                // return the final reward accrual amount for the previous cycle, if any
+                return amount;
+            }
+
+            uint32 end = ((timestamp + rewardsCycleLength) / rewardsCycleLength) * rewardsCycleLength;
 
             // reset for next cycle
             rewardsCycle[strategy] = RewardsCycle({start: timestamp, end: end, reward: rewards});
